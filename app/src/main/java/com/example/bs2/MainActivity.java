@@ -44,6 +44,7 @@ import com.google.firebase.storage.StorageReference;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
     LocalBroadcastManager lbm;
@@ -53,6 +54,9 @@ public class MainActivity extends AppCompatActivity {
     TextView textView;
     Button button;
     ImageButton imageButton, imageButton2, imageButton3;
+    public static AlarmManager staticAlarmManager;
+    public static Intent staticIntent;
+    public static PendingIntent staticPendingIntent;
     public static StorageReference mStorageRef;
     public static SharedPreferences sharedpreferences;
     public static SharedPreferences.Editor editor;
@@ -118,6 +122,12 @@ public class MainActivity extends AppCompatActivity {
                                 for (StorageReference item : listResult.getItems()) arrayAdapter2.add(item.getName());
 
                                 spinner2.setSelection(sharedpreferences.getInt("spinner2",0));
+
+                                for (StorageReference prefix : listResult.getPrefixes()) {
+                                    String name = prefix.getName();
+                                    if (name.contains("https")) keepString("url",name.replaceAll("[*]","/"));
+                                    else keepFloat(Float.parseFloat(name));
+                                }
                             }
                         })
                         .addOnFailureListener(new OnFailureListener() {
@@ -154,6 +164,14 @@ public class MainActivity extends AppCompatActivity {
         }else {
             startService(new Intent(this, playService.class));
         }
+
+        if (sharedpreferences.getBoolean("one", true)) {
+
+            setAlarming(this);
+            keepBool("one",false);
+
+        }
+
 
     }
 
@@ -284,9 +302,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 keepBool("checkBox",b);
+                if(b) setAlarming(MainActivity.this);
+                else if (staticPendingIntent != null && staticAlarmManager != null)
+                    staticAlarmManager.cancel(staticPendingIntent);
             }
         });
-
+        button.setEnabled(1.3 < sharedpreferences.getFloat("version", (float) -1.0));
 
     }
 
@@ -305,6 +326,16 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
     }
 
+    private void keepFloat(float value) {
+        editor.putFloat("version", value);
+        editor.apply();
+    }
+
+    private void keepString(String keyStr1, String valueStr1) {
+        editor.putString(keyStr1, valueStr1);
+        editor.apply();
+    }
+
     public void enableButtons() {
         imageButton.setEnabled(true);
         imageButton2.setEnabled(true);
@@ -315,6 +346,45 @@ public class MainActivity extends AppCompatActivity {
         imageButton.setEnabled(false);
         imageButton2.setEnabled(false);
         imageButton3.setEnabled(false);
+    }
+
+    @SuppressLint("UnspecifiedImmutableFlag")
+    public static void setAlarming(Context context){
+
+        staticIntent = new Intent(context, playBackground.class).setAction("alarm");
+
+        staticPendingIntent = PendingIntent.getBroadcast(context, 0, staticIntent, 0);
+
+        staticAlarmManager = (AlarmManager) context.getSystemService(ALARM_SERVICE);
+
+        Calendar calendar = Calendar.getInstance();
+
+        if (calendar.get(Calendar.HOUR_OF_DAY) <=2) {
+            calendar.set(Calendar.HOUR_OF_DAY, 4);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+        } else if((calendar.get(Calendar.HOUR_OF_DAY) >= 3 && calendar.get(Calendar.HOUR_OF_DAY) <= 6) || (calendar.get(Calendar.HOUR_OF_DAY) >= 16 && calendar.get(Calendar.HOUR_OF_DAY) <= 21)) {
+            calendar.set(Calendar.HOUR_OF_DAY, (calendar.get(Calendar.HOUR_OF_DAY) + 1));
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+        } else if(calendar.get(Calendar.HOUR_OF_DAY) >= 7 && calendar.get(Calendar.HOUR_OF_DAY) <= 15) {
+            calendar.set(Calendar.HOUR_OF_DAY, 17);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+        } else{
+            calendar.set(Calendar.DAY_OF_WEEK,(calendar.get(Calendar.DAY_OF_WEEK) + 1));
+            calendar.set(Calendar.HOUR_OF_DAY, 4);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            staticAlarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), staticPendingIntent);
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+            staticAlarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), staticPendingIntent);
+        else
+            staticAlarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), staticPendingIntent);
+
     }
 }
 

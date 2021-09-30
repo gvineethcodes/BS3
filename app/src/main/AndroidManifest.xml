@@ -31,10 +31,17 @@
                 <action android:name="playPause"/>
                 <action android:name="prev"/>
                 <action android:name="next"/>
+                <action android:name="play"/>
+            </intent-filter>
+        </service>
+
+        <receiver android:name=".playBackground"
+            android:exported="false">
+            <intent-filter>
                 <action android:name="alarm"/>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
-        </service>
+        </receiver>
 
     </application>
 

@@ -1,6 +1,7 @@
 package com.example.bs2;
 
 import static com.example.bs2.MainActivity.arrayAdapter2;
+import static com.example.bs2.MainActivity.editor;
 import static com.example.bs2.MainActivity.subject;
 import static com.example.bs2.MainActivity.topic;
 import static com.example.bs2.MainActivity.text;
@@ -74,14 +75,8 @@ public class playService extends Service {
                     case "next":
                         next(this);
                         break;
-                    case "alarm":
-//                        context.sendBroadcast(new Intent(context, playBackground.class).setAction("playPause"));
-//                        setAlarming(context);
-                        break;
-
-                    case "android.intent.action.BOOT_COMPLETED":
-//                        if (sharedpreferences.getBoolean("onOff",true))
-//                            setAlarming(context);
+                    case "play":
+                        play(this);
                         break;
                 }
             }
@@ -187,6 +182,7 @@ public class playService extends Service {
             Intent Bintent = new Intent("UI");
             Bintent.putExtra("key", "changeSpinner2");
             LocalBroadcastManager.getInstance(this).sendBroadcast(Bintent);
+            keepInt("spinner2",prev);
             play(context);
         }
     }
@@ -198,6 +194,7 @@ public class playService extends Service {
             Intent Bintent = new Intent("UI");
             Bintent.putExtra("key", "changeSpinner2");
             LocalBroadcastManager.getInstance(context).sendBroadcast(Bintent);
+            keepInt("spinner2",next);
             play(context);
         }
     }
@@ -276,6 +273,10 @@ public class playService extends Service {
         }
         stopSelf();
 
+    }
+    private void keepInt(String key, int value){
+        editor.putInt(key,value);
+        editor.apply();
     }
 
 }
