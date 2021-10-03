@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<ListResult>() {
                     @Override
                     public void onSuccess(ListResult listResult) {
-                        arrayAdapter = new ArrayAdapter<String>(MainActivity.this,R.layout.support_simple_spinner_dropdown_item,new ArrayList<>());
+                        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.support_simple_spinner_dropdown_item, new ArrayList<>());
                         spinner.setAdapter(arrayAdapter);
                         for (StorageReference prefix : listResult.getPrefixes()) arrayAdapter.add(prefix.getName());
                         spinner.setSelection(sharedpreferences.getInt("spinner",0));
@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        text=e.getMessage();
+                        keepString("text",e.getMessage());
                     }
                 });
 
@@ -110,17 +110,24 @@ public class MainActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
 
                 keepInt("spinner",i);
-                subject = spinner.getSelectedItem().toString();
+                keepString("subject",spinner.getSelectedItem().toString());
 
-                mStorageRef.child(subject).listAll()
+                mStorageRef.child(spinner.getSelectedItem().toString()).listAll()
                         .addOnSuccessListener(new OnSuccessListener<ListResult>() {
                             @Override
                             public void onSuccess(ListResult listResult) {
                                 arrayAdapter2 = new ArrayAdapter<String>(MainActivity.this,R.layout.support_simple_spinner_dropdown_item,new ArrayList<>());
                                 spinner2.setAdapter(arrayAdapter2);
 
-                                for (StorageReference item : listResult.getItems()) arrayAdapter2.add(item.getName());
-
+                                keepInt("topicSize", listResult.getItems().size());
+                                int j = 0;
+                                for (StorageReference item : listResult.getItems()) {
+                                    String name = item.getName();
+                                    arrayAdapter2.add(name);
+                                    keepInt(name, j);
+                                    keepString("" + j, name);
+                                    j = j + 1;
+                                }
                                 spinner2.setSelection(sharedpreferences.getInt("spinner2",0));
 
                                 for (StorageReference prefix : listResult.getPrefixes()) {
@@ -133,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                         .addOnFailureListener(new OnFailureListener() {
                             @Override
                             public void onFailure(@NonNull Exception e) {
-                                text=e.getMessage();
+                                keepString("text",e.getMessage());
                             }
                         });
             }
@@ -148,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 keepInt("spinner2",i);
-                topic = spinner2.getSelectedItem().toString();
+                keepString("topic",spinner2.getSelectedItem().toString());
                 if(enable.equals("yes"))
                 enableButtons();
             }
@@ -170,6 +177,10 @@ public class MainActivity extends AppCompatActivity {
             setAlarming(this);
             keepBool("one",false);
 
+        }
+        if (sharedpreferences.getBoolean("checkBox", true) && staticPendingIntent == null && staticAlarmManager == null) {
+            setAlarming(this);
+            //Toast.makeText(this, "a", Toast.LENGTH_SHORT).show();
         }
 
 
@@ -200,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
 
                     case "changeSpinner2":
                         enable = "no";
-                        spinner2.setSelection(arrayAdapter2.getPosition(topic));
+                        spinner2.setSelection(sharedpreferences.getInt("spinner2",0));
                         break;
 
                     case "EnablePauseMax":
@@ -225,9 +236,9 @@ public class MainActivity extends AppCompatActivity {
         lbm.registerReceiver(receiver, new IntentFilter("UI"));
 
         if(arrayAdapter2!=null)
-            spinner2.setSelection(arrayAdapter2.getPosition(topic));
+            spinner2.setSelection(sharedpreferences.getInt("spinner2",0));
 
-        if(text.contains("preparing")) disableButtons();
+        if(sharedpreferences.getString("text"," ").contains("preparing")) disableButtons();
 
         if(mediaPlayer!=null){
             if(mediaPlayer.getCurrentPosition()>0){
@@ -276,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
                     totalDuration ="0 : 0";
                     seekBar.setProgress(0);
                 }
-                textView.setText(currentDuration+" / "+totalDuration+"\n"+text);
+                textView.setText(currentDuration+" / "+totalDuration+"\n"+sharedpreferences.getString("text"," "));
                 handler.postDelayed(this, 500);
             }
         }, 0);
@@ -365,6 +376,7 @@ public class MainActivity extends AppCompatActivity {
             calendar.set(Calendar.SECOND, 0);
         } else if((calendar.get(Calendar.HOUR_OF_DAY) >= 3 && calendar.get(Calendar.HOUR_OF_DAY) <= 6) || (calendar.get(Calendar.HOUR_OF_DAY) >= 16 && calendar.get(Calendar.HOUR_OF_DAY) <= 21)) {
             calendar.set(Calendar.HOUR_OF_DAY, (calendar.get(Calendar.HOUR_OF_DAY) + 1));
+            //calendar.set(Calendar.MINUTE, (calendar.get(Calendar.MINUTE) + 2));
             calendar.set(Calendar.MINUTE, 0);
             calendar.set(Calendar.SECOND, 0);
         } else if(calendar.get(Calendar.HOUR_OF_DAY) >= 7 && calendar.get(Calendar.HOUR_OF_DAY) <= 15) {
